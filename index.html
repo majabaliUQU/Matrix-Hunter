@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>حصن النيون: لعبة الضرب</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050510;
+            color: white;
+            font-family: 'Cairo', sans-serif;
+            touch-action: none; /* يمنع التمرير على الجوال */
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .hud-top {
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 20px;
+            text-shadow: 0 0 10px #0ff;
+        }
+
+        #score-display { color: #0ff; }
+        #lives-display { color: #f0f; }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            pointer-events: auto;
+            z-index: 10;
+        }
+
+        .hidden { display: none !important; }
+
+        h1 {
+            font-size: 3rem;
+            margin: 0;
+            background: linear-gradient(to right, #0ff, #f0f);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+
+        p { font-size: 1.2rem; color: #ddd; max-width: 80%; line-height: 1.6; }
+
+        button {
+            background: linear-gradient(45deg, #0ff, #00aaff);
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            color: #000;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 20px;
+            box-shadow: 0 0 20px #0ff;
+            transition: transform 0.2s;
+            font-family: 'Cairo', sans-serif;
+        }
+
+        button:active { transform: scale(0.95); }
+
+        /* منطقة التعليمات أثناء اللعب */
+        #hint-box {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid #0ff;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 1.2rem;
+            color: #fff;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- طبقة واجهة المستخدم -->
+    <div id="ui-layer">
+        <div class="hud-top">
+            <div id="score-display">النقاط: 0</div>
+            <div id="lives-display">❤️❤️❤️</div>
+        </div>
+        <div id="hint-box"></div>
+    </div>
+
+    <!-- شاشة البداية -->
+    <div id="start-screen" class="overlay">
+        <h1>حصن النيون</h1>
+        <p>الأعداء يحملون أرقاماً.<br>ارسم <strong>مستطيلاً</strong> على الشبكة بالأسفل لتشكيل ناتج الضرب وقتلهم!</p>
+        <p style="font-size: 0.9rem; color: #aaa;">مثال: لقتل رقم 12، ارسم 3×4 أو 2×6</p>
+        <button onclick="startGame()">ابدأ اللعب</button>
+    </div>
+
+    <!-- شاشة الخسارة -->
+    <div id="game-over-screen" class="overlay hidden">
+        <h1 style="color: #f05;">انتهت اللعبة</h1>
+        <p id="final-score">النقاط: 0</p>
+        <button onclick="resetGame()">العب مجدداً</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+<script>
+/**
+ * إعدادات اللعبة والمنطق
+ */
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const hintBox = document.getElementById('hint-box');
+
+// حالة اللعبة
+let gameState = 'START'; // START, PLAYING, GAMEOVER
+let score = 0;
+let lives = 3;
+let frameCount = 0;
+let difficultyLevel = 1;
+
+// الشبكة (Grid)
+const GRID_COLS = 10;
+const GRID_ROWS = 10;
+let cellSize = 0;
+let gridStartX = 0;
+let gridStartY = 0;
+
+// المدخلات
+let isDragging = false;
+let startCell = { col: -1, row: -1 };
+let currentCell = { col: -1, row: -1 };
+let selectedRect = null; // { w, h, area }
+
+// كائنات اللعبة
+let enemies = [];
+let particles = [];
+let lasers = [];
+
+// الصوت (Audio Context)
+let audioCtx = null;
+
+// ضبط حجم الشاشة
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    // حساب حجم الخلية لملء العرض (مع هامش بسيط)
+    const margin = 20;
+    const availableWidth = canvas.width - (margin * 2);
+    cellSize = Math.floor(availableWidth / GRID_COLS);
+
+    // توسيط الشبكة أفقياً ووضعها في الأسفل
+    gridStartX = (canvas.width - (cellSize * GRID_COLS)) / 2;
+    gridStartY = canvas.height - (cellSize * GRID_ROWS) - 40; // 40px من الأسفل
+}
+
+window.addEventListener('resize', resize);
+resize();
+
+// ==========================================
+// منطق الأعداء وتوليد الأرقام
+// ==========================================
+
+function getFactorsForLevel(level) {
+    // المستوى 1: جداول 1, 2, 5, 10
+    if (level === 1) return [1, 2, 5, 10];
+    // المستوى 2: إضافة 3, 4
+    if (level === 2) return [1, 2, 3, 4, 5, 10];
+    // المستوى 3: إضافة 6, 9
+    if (level === 3) return [1, 2, 3, 4, 5, 6, 9, 10];
+    // المستوى 4+: كل شيء (بما فيها 7, 8 الصعبة)
+    return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+}
+
+function spawnEnemy() {
+    const factors = getFactorsForLevel(difficultyLevel);
+    // نختار عاملين عشوائيين بناءً على الصعوبة
+    const f1 = factors[Math.floor(Math.random() * factors.length)];
+    // العامل الثاني يمكن أن يكون أي رقم من 1 إلى 10 لزيادة التنوع
+    const f2 = Math.floor(Math.random() * 10) + 1;
+    
+    const value = f1 * f2;
+    
+    // تعديل: سرعة أبطأ بكثير لتعطيك وقت للرسم
+    // السرعة تبدأ من 0.2 (بطيئة جداً) وتزيد ببطء شديد كلما زادت النقاط
+    const speed = 0.2 + (score / 2000);
+
+    enemies.push({
+        x: Math.random() * (canvas.width - 60) + 30,
+        y: -50,
+        value: value,
+        radius: 25,
+        speed: speed,
+        color: `hsl(${Math.random() * 360}, 70%, 60%)`
+    });
+}
+
+// ==========================================
+// نظام الصوت البسيط (Synthesizer)
+// ==========================================
+function playSound(type) {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    
+    osc.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    if (type === 'shoot') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.1);
+    } else if (type === 'hit') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.1);
+        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.2);
+    } else if (type === 'error') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.2);
+        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.2);
+    }
+}
+
+// ==========================================
+// التعامل مع اللمس والمدخلات
+// ==========================================
+
+function getGridPos(clientX, clientY) {
+    const x = clientX - gridStartX;
+    const y = clientY - gridStartY;
+    
+    const col = Math.floor(x / cellSize);
+    const row = Math.floor(y / cellSize);
+    
+    // التأكد من أن اللمس داخل الشبكة
+    if (col >= 0 && col < GRID_COLS && row >= 0 && row < GRID_ROWS) {
+        return { col, row };
+    }
+    return null;
+}
+
+function handleInputStart(e) {
+    if (gameState !== 'PLAYING') return;
+    e.preventDefault(); // منع التمرير
+    
+    const touch = e.touches ? e.touches[0] : e;
+    const pos = getGridPos(touch.clientX, touch.clientY);
+    
+    if (pos) {
+        isDragging = true;
+        startCell = pos;
+        currentCell = pos;
+        updateSelection();
+        playSound('shoot'); // صوت خفيف عند بداية الرسم
+    }
+}
+
+function handleInputMove(e) {
+    if (!isDragging) return;
+    e.preventDefault();
+    
+    const touch = e.touches ? e.touches[0] : e;
+    const pos = getGridPos(touch.clientX, touch.clientY);
+    
+    if (pos) {
+        currentCell = pos;
+        updateSelection();
+    }
+}
+
+function handleInputEnd(e) {
+    if (!isDragging) return;
+    e.preventDefault();
+    isDragging = false;
+    
+    fireWeapon();
+    
+    // إعادة تعيين الاختيار
+    selectedRect = null;
+    hintBox.style.opacity = '0';
+}
+
+function updateSelection() {
+    const c1 = Math.min(startCell.col, currentCell.col);
+    const c2 = Math.max(startCell.col, currentCell.col);
+    const r1 = Math.min(startCell.row, currentCell.row);
+    const r2 = Math.max(startCell.row, currentCell.row);
+    
+    const w = (c2 - c1) + 1;
+    const h = (r2 - r1) + 1;
+    const area = w * h;
+    
+    selectedRect = { c: c1, r: r1, w: w, h: h, area: area };
+    
+    // تحديث النص المساعد
+    hintBox.textContent = `القوة: ${w} × ${h} = ${area}`;
+    hintBox.style.opacity = '1';
+}
+
+function fireWeapon() {
+    if (!selectedRect) return;
+    
+    const damage = selectedRect.area;
+    let hitSomething = false;
+
+    // إنشاء ليزر بصري من مركز الشبكة المحددة إلى الأعلى
+    const rectCenterX = gridStartX + (selectedRect.c * cellSize) + (selectedRect.w * cellSize / 2);
+    const rectCenterY = gridStartY + (selectedRect.r * cellSize) + (selectedRect.h * cellSize / 2);
+
+    // البحث عن أعداء يطابقون القيمة
+    for (let i = enemies.length - 1; i >= 0; i--) {
+        if (enemies[i].value === damage) {
+            // تدمير العدو
+            createExplosion(enemies[i].x, enemies[i].y, enemies[i].color);
+            lasers.push({
+                x1: rectCenterX, y1: rectCenterY, 
+                x2: enemies[i].x, y2: enemies[i].y, 
+                life: 10, color: '#0ff'
+            });
+            enemies.splice(i, 1);
+            score += 10;
+            hitSomething = true;
+            playSound('hit');
+        }
+    }
+
+    if (!hitSomething) {
+        // تأثير خطأ (ليزر أحمر يتلاشى)
+        lasers.push({
+            x1: rectCenterX, y1: rectCenterY, 
+            x2: rectCenterX, y2: 0, 
+            life: 5, color: '#f00' // أحمر للخطأ
+        });
+        playSound('error');
+    }
+    
+    // تحديث الصعوبة
+    if (score > 100) difficultyLevel = 2;
+    if (score > 300) difficultyLevel = 3;
+    if (score > 600) difficultyLevel = 4;
+}
+
+function createExplosion(x, y, color) {
+    for (let i = 0; i < 15; i++) {
+        particles.push({
+            x: x, y: y,
+            vx: (Math.random() - 0.5) * 10,
+            vy: (Math.random() - 0.5) * 10,
+            life: 30,
+            color: color
+        });
+    }
+}
+
+// ==========================================
+// حلقة اللعبة والرسم
+// ==========================================
+
+function drawGrid() {
+    // خلفية الشبكة
+    ctx.strokeStyle = '#222';
+    ctx.lineWidth = 1;
+    
+    for (let c = 0; c <= GRID_COLS; c++) {
+        const x = gridStartX + c * cellSize;
+        ctx.beginPath();
+        ctx.moveTo(x, gridStartY);
+        ctx.lineTo(x, gridStartY + GRID_ROWS * cellSize);
+        ctx.stroke();
+    }
+    for (let r = 0; r <= GRID_ROWS; r++) {
+        const y = gridStartY + r * cellSize;
+        ctx.beginPath();
+        ctx.moveTo(gridStartX, y);
+        ctx.lineTo(gridStartX + GRID_COLS * cellSize, y);
+        ctx.stroke();
+    }
+
+    // رسم التحديد الحالي
+    if (selectedRect) {
+        const x = gridStartX + selectedRect.c * cellSize;
+        const y = gridStartY + selectedRect.r * cellSize;
+        const w = selectedRect.w * cellSize;
+        const h = selectedRect.h * cellSize;
+
+        ctx.fillStyle = 'rgba(0, 255, 255, 0.3)';
+        ctx.fillRect(x, y, w, h);
+        ctx.strokeStyle = '#0ff';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(x, y, w, h);
+        
+        // تأثير توهج
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = '#0ff';
+        ctx.strokeRect(x, y, w, h);
+        ctx.shadowBlur = 0;
+    }
+}
+
+function update() {
+    if (gameState !== 'PLAYING') return;
+
+    // مسح الشاشة
+    ctx.fillStyle = '#050510';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // تعديل: توليد الأعداء كل 240 إطار (حوالي 4 ثواني) بدلاً من ثانيتين
+    // هذا يقلل كمية الأرقام التي تنزل بشكل كبير
+    if (frameCount % 240 === 0) spawnEnemy(); 
+    frameCount++;
+
+    // رسم خط فاصل للشبكة
+    ctx.strokeStyle = '#333';
+    ctx.beginPath();
+    ctx.moveTo(0, gridStartY - 10);
+    ctx.lineTo(canvas.width, gridStartY - 10);
+    ctx.stroke();
+
+    // تحديث ورسم الأعداء
+    ctx.font = 'bold 24px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    for (let i = enemies.length - 1; i >= 0; i--) {
+        let e = enemies[i];
+        e.y += e.speed;
+
+        // رسم العدو
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
+        ctx.fillStyle = '#111';
+        ctx.fill();
+        ctx.strokeStyle = e.color;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        
+        ctx.fillStyle = '#fff';
+        ctx.fillText(e.value, e.x, e.y);
+
+        // التحقق من الخسارة
+        if (e.y > gridStartY - e.radius) {
+            enemies.splice(i, 1);
+            lives--;
+            playSound('error');
+            createExplosion(e.x, e.y, '#f00');
+            if (lives <= 0) endGame();
+        }
+    }
+
+    // تحديث الجسيمات
+    for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, 3, 3);
+        if (p.life <= 0) particles.splice(i, 1);
+    }
+
+    // تحديث الليزر
+    for (let i = lasers.length - 1; i >= 0; i--) {
+        let l = lasers[i];
+        ctx.beginPath();
+        ctx.moveTo(l.x1, l.y1);
+        ctx.lineTo(l.x2, l.y2);
+        ctx.strokeStyle = l.color;
+        ctx.lineWidth = l.life / 2;
+        ctx.stroke();
+        l.life--;
+        if (l.life <= 0) lasers.splice(i, 1);
+    }
+
+    drawGrid();
+    updateUI();
+
+    requestAnimationFrame(update);
+}
+
+function updateUI() {
+    document.getElementById('score-display').innerText = `النقاط: ${score}`;
+    document.getElementById('lives-display').innerText = '❤️'.repeat(lives);
+}
+
+// ==========================================
+// إدارة حالة اللعبة
+// ==========================================
+
+function startGame() {
+    document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('game-over-screen').classList.add('hidden');
+    
+    if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+
+    gameState = 'PLAYING';
+    score = 0;
+    lives = 3;
+    enemies = [];
+    particles = [];
+    difficultyLevel = 1;
+    frameCount = 0;
+    update();
+}
+
+function endGame() {
+    gameState = 'GAMEOVER';
+    document.getElementById('final-score').innerText = `النقاط النهائية: ${score}`;
+    document.getElementById('game-over-screen').classList.remove('hidden');
+}
+
+function resetGame() {
+    startGame();
+}
+
+// مستمعي الأحداث
+canvas.addEventListener('mousedown', handleInputStart);
+canvas.addEventListener('mousemove', handleInputMove);
+window.addEventListener('mouseup', handleInputEnd);
+
+canvas.addEventListener('touchstart', handleInputStart, { passive: false });
+canvas.addEventListener('touchmove', handleInputMove, { passive: false });
+canvas.addEventListener('touchend', handleInputEnd, { passive: false });
+
+// تشغيل أولي
+resize();
+
+</script>
+</body>
+</html>
+
+
