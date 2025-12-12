@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>حصن النيون: لعبة الضرب</title>
+    <title>صياد الأرقام</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
 
         body {
             margin: 0;
             overflow: hidden;
-            background-color: #050510;
+            background-color: #0a0a12;
             color: white;
             font-family: 'Cairo', sans-serif;
-            touch-action: none; /* يمنع التمرير على الجوال */
+            touch-action: none;
             user-select: none;
             -webkit-user-select: none;
         }
@@ -33,19 +33,20 @@
             pointer-events: none;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
         }
 
         .hud-top {
-            padding: 15px;
+            padding: 20px;
             display: flex;
             justify-content: space-between;
-            font-size: 20px;
-            text-shadow: 0 0 10px #0ff;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            z-index: 5;
         }
 
-        #score-display { color: #0ff; }
-        #lives-display { color: #f0f; }
+        #score-display { color: #00ffcc; }
+        #lives-display { color: #ff0055; letter-spacing: 5px; }
 
         .overlay {
             position: absolute;
@@ -53,108 +54,223 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(10, 10, 18, 0.95);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
             pointer-events: auto;
-            z-index: 10;
+            z-index: 100;
+            padding: 20px;
+            box-sizing: border-box;
         }
 
         .hidden { display: none !important; }
 
         h1 {
-            font-size: 3rem;
-            margin: 0;
-            background: linear-gradient(to right, #0ff, #f0f);
+            font-size: 3.5rem;
+            margin: 0 0 10px 0;
+            background: linear-gradient(to bottom, #00ffcc, #0088aa);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+            text-transform: uppercase;
+            filter: drop-shadow(0 0 10px rgba(0, 255, 204, 0.3));
         }
 
-        p { font-size: 1.2rem; color: #ddd; max-width: 80%; line-height: 1.6; }
+        p { font-size: 1.1rem; color: #aaa; max-width: 80%; line-height: 1.6; margin-bottom: 30px; }
 
-        button {
-            background: linear-gradient(45deg, #0ff, #00aaff);
+        .btn-primary {
+            background: #00ffcc;
             border: none;
-            padding: 15px 40px;
-            font-size: 1.5rem;
-            color: #000;
-            font-weight: bold;
-            border-radius: 50px;
+            padding: 15px 50px;
+            font-size: 1.4rem;
+            color: #0a0a12;
+            font-weight: 900;
+            border-radius: 8px;
             cursor: pointer;
-            margin-top: 20px;
-            box-shadow: 0 0 20px #0ff;
-            transition: transform 0.2s;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.4);
+            transition: all 0.2s;
             font-family: 'Cairo', sans-serif;
+            margin-bottom: 15px;
+            width: 100%;
+            max-width: 300px;
         }
 
-        button:active { transform: scale(0.95); }
+        .btn-primary:active { transform: scale(0.95); background: #fff; }
 
-        /* منطقة التعليمات أثناء اللعب */
-        #hint-box {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.6);
-            border: 1px solid #0ff;
+        .btn-share {
+            background: transparent;
+            border: 2px solid #00ffcc;
+            color: #00ffcc;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Cairo', sans-serif;
+            margin-bottom: 25px;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .btn-share:hover { background: rgba(0, 255, 204, 0.1); }
+        .btn-share:active { transform: scale(0.95); }
+
+        /* مفتاح التبديل للإعدادات - تم تعديله ليضمن الترتيب الصحيح */
+        .settings-container {
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255,255,255,0.1);
             padding: 10px 20px;
-            border-radius: 20px;
-            font-size: 1.2rem;
-            color: #fff;
-            white-space: nowrap;
-            opacity: 0;
-            transition: opacity 0.2s;
+            border-radius: 50px;
+            direction: ltr; /* مهم جداً: إجبار الاتجاه من اليسار لليمين لضمان تطابق الزر */
         }
+
+        .toggle-label {
+            color: #fff;
+            font-size: 1.2rem;
+            font-weight: bold;
+            font-family: sans-serif; /* لضمان ظهور الأرقام بشكل صحيح */
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #333;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #00ffcc;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        /* تنسيق صندوق المطور */
+        .dev-box {
+            margin-top: auto;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 10px 20px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            border: 1px solid rgba(0, 255, 204, 0.2);
+            margin-bottom: 20px;
+        }
+
+        .dev-text {
+            color: #ddd;
+            font-size: 0.9rem;
+            margin: 0;
+            font-weight: bold;
+        }
+
+        .whatsapp-icon {
+            width: 32px;
+            height: 32px;
+            fill: #25D366;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .whatsapp-icon:hover { transform: scale(1.15); filter: drop-shadow(0 0 5px #25D366); }
+
     </style>
 </head>
 <body>
 
-    <!-- طبقة واجهة المستخدم -->
     <div id="ui-layer">
         <div class="hud-top">
-            <div id="score-display">النقاط: 0</div>
+            <div id="score-display">النقاط: ٠</div>
             <div id="lives-display">❤️❤️❤️</div>
         </div>
-        <div id="hint-box"></div>
     </div>
 
     <!-- شاشة البداية -->
     <div id="start-screen" class="overlay">
-        <h1>حصن النيون</h1>
-        <p>الأعداء يحملون أرقاماً.<br>ارسم <strong>مستطيلاً</strong> على الشبكة بالأسفل لتشكيل ناتج الضرب وقتلهم!</p>
-        <p style="font-size: 0.9rem; color: #aaa;">مثال: لقتل رقم 12، ارسم 3×4 أو 2×6</p>
-        <button onclick="startGame()">ابدأ اللعب</button>
+        <h1>صياد الأرقام</h1>
+        <p>الأرقام تهجم عليك!<br>مهمتك: رسم "مستطيل" يطابق قيمة الرقم لتدميره.<br><br>مثال: لتدمير <strong><span class="demo-num">12</span></strong>، ارسم <strong><span class="demo-dim">3×4</span></strong> أو <strong><span class="demo-dim">2×6</span></strong>.</p>
+        
+        <button class="btn-primary" onclick="startGame()">ابدأ اللعب</button>
+        
+        <div class="settings-container">
+            <span class="toggle-label">123</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="num-toggle" onchange="toggleNumerals()">
+                <span class="slider"></span>
+            </label>
+            <span class="toggle-label">١٢٣</span>
+        </div>
     </div>
 
     <!-- شاشة الخسارة -->
     <div id="game-over-screen" class="overlay hidden">
-        <h1 style="color: #f05;">انتهت اللعبة</h1>
-        <p id="final-score">النقاط: 0</p>
-        <button onclick="resetGame()">العب مجدداً</button>
+        <h1 style="color: #ff0055; -webkit-text-fill-color: #ff0055;">انتهت اللعبة</h1>
+        <p id="final-score" style="color: white; font-size: 1.5rem; margin-bottom: 20px;">النقاط: ٠</p>
+        
+        <button class="btn-primary" onclick="resetGame()">العب مجدداً</button>
+        <button class="btn-share" onclick="shareGame()">شارك التحدي مع أصدقائك</button>
+
+        <!-- صندوق المطور -->
+        <div class="dev-box">
+            <p class="dev-text">تطوير محمد جبلي</p>
+            <a href="https://wa.me/966505501575" target="_blank" aria-label="تواصل عبر واتساب">
+                <svg class="whatsapp-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+                    <!-- Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
+                    <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7 .9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/>
+                </svg>
+            </a>
+        </div>
     </div>
 
     <canvas id="gameCanvas"></canvas>
 
 <script>
-/**
- * إعدادات اللعبة والمنطق
- */
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const hintBox = document.getElementById('hint-box');
+
+// إعدادات
+let useArabicNumerals = false; // false = 123 (الافتراضي: يسار), true = ١٢٣ (يمين)
 
 // حالة اللعبة
-let gameState = 'START'; // START, PLAYING, GAMEOVER
+let gameState = 'START'; 
 let score = 0;
 let lives = 3;
 let frameCount = 0;
 let difficultyLevel = 1;
 
-// الشبكة (Grid)
+// الشبكة
 const GRID_COLS = 10;
 const GRID_ROWS = 10;
 let cellSize = 0;
@@ -165,74 +281,117 @@ let gridStartY = 0;
 let isDragging = false;
 let startCell = { col: -1, row: -1 };
 let currentCell = { col: -1, row: -1 };
-let selectedRect = null; // { w, h, area }
+let selectedRect = null; 
+let dragPosition = { x: 0, y: 0 };
 
 // كائنات اللعبة
 let enemies = [];
 let particles = [];
 let lasers = [];
 
-// الصوت (Audio Context)
+// الصوت
 let audioCtx = null;
 
-// ضبط حجم الشاشة
+// ==========================================
+// دالة المشاركة
+// ==========================================
+function shareGame() {
+    const currentScore = formatNum(score);
+    const text = `تحدي الذكاء والسرعة! 🚀\nلقد حققت ${currentScore} نقطة في لعبة *صياد الأرقام*... هل تمتلك المهارة لهزيمتي؟ 🔥\nجرب اللعبة الآن وأرني ما لديك! 💪\n`;
+    const url = window.location.href; // رابط اللعبة
+
+    if (navigator.share) {
+        navigator.share({
+            title: 'لعبة صياد الأرقام',
+            text: text,
+            url: url
+        }).catch(err => {
+            console.log('Error sharing:', err);
+        });
+    } else {
+        // بديل في حال عدم دعم المتصفح للمشاركة المباشرة
+        // نقوم بنسخ النص للحافظة
+        const dummy = document.createElement("textarea");
+        document.body.appendChild(dummy);
+        dummy.value = text + " " + url;
+        dummy.select();
+        document.execCommand("copy");
+        document.body.removeChild(dummy);
+        alert("تم نسخ رسالة التحدي! شاركها مع أصدقائك الآن.");
+    }
+}
+
+// ==========================================
+// دالة تحويل الأرقام
+// ==========================================
+function formatNum(n) {
+    if (!useArabicNumerals) return n;
+    return n.toString().replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
+}
+
+function toggleNumerals() {
+    const checkbox = document.getElementById('num-toggle');
+    // الزر على اليسار (غير مفعل) = 123
+    // الزر على اليمين (مفعل) = ١٢٣
+    useArabicNumerals = checkbox.checked;
+    
+    // تحديث المثال في شاشة البداية
+    const demoNum = document.querySelector('.demo-num');
+    const demoDim = document.querySelectorAll('.demo-dim');
+    
+    demoNum.innerText = formatNum(12);
+    demoDim[0].innerText = formatNum(3) + "×" + formatNum(4);
+    demoDim[1].innerText = formatNum(2) + "×" + formatNum(6);
+}
+
+// ضبط الحجم الأولي
 function resize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    // حساب حجم الخلية لملء العرض (مع هامش بسيط)
     const margin = 20;
-    const availableWidth = canvas.width - (margin * 2);
+    const availableWidth = Math.min(canvas.width - (margin * 2), 600);
     cellSize = Math.floor(availableWidth / GRID_COLS);
 
-    // توسيط الشبكة أفقياً ووضعها في الأسفل
     gridStartX = (canvas.width - (cellSize * GRID_COLS)) / 2;
-    gridStartY = canvas.height - (cellSize * GRID_ROWS) - 40; // 40px من الأسفل
+    gridStartY = canvas.height - (cellSize * GRID_ROWS) - 80; 
 }
 
 window.addEventListener('resize', resize);
 resize();
 
 // ==========================================
-// منطق الأعداء وتوليد الأرقام
+// منطق الأعداء
 // ==========================================
 
 function getFactorsForLevel(level) {
-    // المستوى 1: جداول 1, 2, 5, 10
-    if (level === 1) return [1, 2, 5, 10];
-    // المستوى 2: إضافة 3, 4
+    if (level === 1) return [1, 2, 5, 10]; 
     if (level === 2) return [1, 2, 3, 4, 5, 10];
-    // المستوى 3: إضافة 6, 9
     if (level === 3) return [1, 2, 3, 4, 5, 6, 9, 10];
-    // المستوى 4+: كل شيء (بما فيها 7, 8 الصعبة)
     return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 }
 
 function spawnEnemy() {
     const factors = getFactorsForLevel(difficultyLevel);
-    // نختار عاملين عشوائيين بناءً على الصعوبة
     const f1 = factors[Math.floor(Math.random() * factors.length)];
-    // العامل الثاني يمكن أن يكون أي رقم من 1 إلى 10 لزيادة التنوع
     const f2 = Math.floor(Math.random() * 10) + 1;
-    
     const value = f1 * f2;
     
-    // تعديل: سرعة أبطأ بكثير لتعطيك وقت للرسم
-    // السرعة تبدأ من 0.2 (بطيئة جداً) وتزيد ببطء شديد كلما زادت النقاط
-    const speed = 0.2 + (score / 2000);
+    // السرعة
+    const speed = 0.15 + (score / 3000);
 
     enemies.push({
         x: Math.random() * (canvas.width - 60) + 30,
-        y: -50,
+        y: -60,
         value: value,
-        radius: 25,
+        radius: 28,
         speed: speed,
         color: `hsl(${Math.random() * 360}, 70%, 60%)`
     });
 }
 
 // ==========================================
-// نظام الصوت البسيط (Synthesizer)
+// الصوت
 // ==========================================
 function playSound(type) {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -243,64 +402,69 @@ function playSound(type) {
     osc.connect(gainNode);
     gainNode.connect(audioCtx.destination);
     
-    if (type === 'shoot') {
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(400, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
-        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+    const now = audioCtx.currentTime;
+
+    if (type === 'pop') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, now);
+        osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+        gainNode.gain.setValueAtTime(0.05, now);
+        gainNode.gain.linearRampToValueAtTime(0, now + 0.1);
         osc.start();
-        osc.stop(audioCtx.currentTime + 0.1);
+        osc.stop(now + 0.1);
     } else if (type === 'hit') {
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(100, audioCtx.currentTime);
-        osc.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.1);
-        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(200, now);
+        osc.frequency.exponentialRampToValueAtTime(50, now + 0.3);
+        gainNode.gain.setValueAtTime(0.1, now);
+        gainNode.gain.linearRampToValueAtTime(0, now + 0.3);
         osc.start();
-        osc.stop(audioCtx.currentTime + 0.2);
+        osc.stop(now + 0.3);
     } else if (type === 'error') {
         osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-        osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.2);
-        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.2);
+        osc.frequency.setValueAtTime(100, now);
+        osc.frequency.linearRampToValueAtTime(50, now + 0.3);
+        gainNode.gain.setValueAtTime(0.1, now);
+        gainNode.gain.linearRampToValueAtTime(0, now + 0.3);
         osc.start();
-        osc.stop(audioCtx.currentTime + 0.2);
+        osc.stop(now + 0.3);
     }
 }
 
 // ==========================================
-// التعامل مع اللمس والمدخلات
+// المدخلات
 // ==========================================
 
 function getGridPos(clientX, clientY) {
     const x = clientX - gridStartX;
     const y = clientY - gridStartY;
-    
     const col = Math.floor(x / cellSize);
     const row = Math.floor(y / cellSize);
     
-    // التأكد من أن اللمس داخل الشبكة
-    if (col >= 0 && col < GRID_COLS && row >= 0 && row < GRID_ROWS) {
-        return { col, row };
+    const clampedCol = Math.max(0, Math.min(GRID_COLS - 1, col));
+    const clampedRow = Math.max(0, Math.min(GRID_ROWS - 1, row));
+
+    if (x > -50 && x < (GRID_COLS * cellSize) + 50 && 
+        y > -50 && y < (GRID_ROWS * cellSize) + 50) {
+        return { col: clampedCol, row: clampedRow };
     }
     return null;
 }
 
 function handleInputStart(e) {
     if (gameState !== 'PLAYING') return;
-    e.preventDefault(); // منع التمرير
     
     const touch = e.touches ? e.touches[0] : e;
     const pos = getGridPos(touch.clientX, touch.clientY);
     
     if (pos) {
+        e.preventDefault();
         isDragging = true;
         startCell = pos;
         currentCell = pos;
+        dragPosition = { x: touch.clientX, y: touch.clientY };
         updateSelection();
-        playSound('shoot'); // صوت خفيف عند بداية الرسم
+        playSound('pop');
     }
 }
 
@@ -309,10 +473,14 @@ function handleInputMove(e) {
     e.preventDefault();
     
     const touch = e.touches ? e.touches[0] : e;
+    dragPosition = { x: touch.clientX, y: touch.clientY };
     const pos = getGridPos(touch.clientX, touch.clientY);
     
     if (pos) {
-        currentCell = pos;
+        if (pos.col !== currentCell.col || pos.row !== currentCell.row) {
+            currentCell = pos;
+            playSound('pop');
+        }
         updateSelection();
     }
 }
@@ -321,12 +489,8 @@ function handleInputEnd(e) {
     if (!isDragging) return;
     e.preventDefault();
     isDragging = false;
-    
     fireWeapon();
-    
-    // إعادة تعيين الاختيار
     selectedRect = null;
-    hintBox.style.opacity = '0';
 }
 
 function updateSelection() {
@@ -340,10 +504,6 @@ function updateSelection() {
     const area = w * h;
     
     selectedRect = { c: c1, r: r1, w: w, h: h, area: area };
-    
-    // تحديث النص المساعد
-    hintBox.textContent = `القوة: ${w} × ${h} = ${area}`;
-    hintBox.style.opacity = '1';
 }
 
 function fireWeapon() {
@@ -352,19 +512,16 @@ function fireWeapon() {
     const damage = selectedRect.area;
     let hitSomething = false;
 
-    // إنشاء ليزر بصري من مركز الشبكة المحددة إلى الأعلى
     const rectCenterX = gridStartX + (selectedRect.c * cellSize) + (selectedRect.w * cellSize / 2);
     const rectCenterY = gridStartY + (selectedRect.r * cellSize) + (selectedRect.h * cellSize / 2);
 
-    // البحث عن أعداء يطابقون القيمة
     for (let i = enemies.length - 1; i >= 0; i--) {
         if (enemies[i].value === damage) {
-            // تدمير العدو
             createExplosion(enemies[i].x, enemies[i].y, enemies[i].color);
             lasers.push({
                 x1: rectCenterX, y1: rectCenterY, 
                 x2: enemies[i].x, y2: enemies[i].y, 
-                life: 10, color: '#0ff'
+                life: 15, color: '#00ffcc', hit: true
             });
             enemies.splice(i, 1);
             score += 10;
@@ -374,99 +531,109 @@ function fireWeapon() {
     }
 
     if (!hitSomething) {
-        // تأثير خطأ (ليزر أحمر يتلاشى)
         lasers.push({
             x1: rectCenterX, y1: rectCenterY, 
-            x2: rectCenterX, y2: 0, 
-            life: 5, color: '#f00' // أحمر للخطأ
+            x2: rectCenterX, y2: -50, 
+            life: 8, color: '#ff0055', hit: false
         });
         playSound('error');
     }
     
-    // تحديث الصعوبة
     if (score > 100) difficultyLevel = 2;
     if (score > 300) difficultyLevel = 3;
     if (score > 600) difficultyLevel = 4;
 }
 
 function createExplosion(x, y, color) {
-    for (let i = 0; i < 15; i++) {
+    for (let i = 0; i < 20; i++) {
         particles.push({
             x: x, y: y,
-            vx: (Math.random() - 0.5) * 10,
-            vy: (Math.random() - 0.5) * 10,
-            life: 30,
+            vx: (Math.random() - 0.5) * 12,
+            vy: (Math.random() - 0.5) * 12,
+            life: 40,
             color: color
         });
     }
 }
 
 // ==========================================
-// حلقة اللعبة والرسم
+// الرسم
 // ==========================================
 
 function drawGrid() {
-    // خلفية الشبكة
-    ctx.strokeStyle = '#222';
     ctx.lineWidth = 1;
     
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+    ctx.fillRect(gridStartX, gridStartY, GRID_COLS * cellSize, GRID_ROWS * cellSize);
+
+    ctx.strokeStyle = '#333';
     for (let c = 0; c <= GRID_COLS; c++) {
         const x = gridStartX + c * cellSize;
-        ctx.beginPath();
-        ctx.moveTo(x, gridStartY);
-        ctx.lineTo(x, gridStartY + GRID_ROWS * cellSize);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x, gridStartY); ctx.lineTo(x, gridStartY + GRID_ROWS * cellSize); ctx.stroke();
     }
     for (let r = 0; r <= GRID_ROWS; r++) {
         const y = gridStartY + r * cellSize;
-        ctx.beginPath();
-        ctx.moveTo(gridStartX, y);
-        ctx.lineTo(gridStartX + GRID_COLS * cellSize, y);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(gridStartX, y); ctx.lineTo(gridStartX + GRID_COLS * cellSize, y); ctx.stroke();
     }
 
-    // رسم التحديد الحالي
     if (selectedRect) {
         const x = gridStartX + selectedRect.c * cellSize;
         const y = gridStartY + selectedRect.r * cellSize;
         const w = selectedRect.w * cellSize;
         const h = selectedRect.h * cellSize;
 
-        ctx.fillStyle = 'rgba(0, 255, 255, 0.3)';
+        ctx.fillStyle = 'rgba(0, 255, 204, 0.2)';
         ctx.fillRect(x, y, w, h);
-        ctx.strokeStyle = '#0ff';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(x, y, w, h);
         
-        // تأثير توهج
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = '#0ff';
+        ctx.strokeStyle = '#00ffcc';
+        ctx.lineWidth = 2;
         ctx.strokeRect(x, y, w, h);
-        ctx.shadowBlur = 0;
+
+        // الرسم فوق الإصبع
+        let labelX = dragPosition.x;
+        let labelY = dragPosition.y - 80;
+
+        if (labelX < 50) labelX = 50;
+        if (labelX > canvas.width - 50) labelX = canvas.width - 50;
+        if (labelY < 50) labelY = 50;
+
+        // نص الأبعاد مع التحويل حسب الإعدادات
+        const text = `${formatNum(selectedRect.w)} × ${formatNum(selectedRect.h)}`;
+        
+        ctx.font = '900 30px "Cairo", sans-serif';
+        const textMetrics = ctx.measureText(text);
+        const textW = textMetrics.width;
+        
+        ctx.fillStyle = 'rgba(0,0,0,0.8)';
+        ctx.beginPath();
+        ctx.roundRect(labelX - textW/2 - 15, labelY - 25, textW + 30, 50, 10);
+        ctx.fill();
+        ctx.strokeStyle = '#00ffcc';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, labelX, labelY + 4);
     }
 }
 
 function update() {
     if (gameState !== 'PLAYING') return;
 
-    // مسح الشاشة
-    ctx.fillStyle = '#050510';
+    ctx.fillStyle = '#0a0a12';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // تعديل: توليد الأعداء كل 240 إطار (حوالي 4 ثواني) بدلاً من ثانيتين
-    // هذا يقلل كمية الأرقام التي تنزل بشكل كبير
-    if (frameCount % 240 === 0) spawnEnemy(); 
+    ctx.fillStyle = 'rgba(0, 255, 204, 0.03)';
+    if (frameCount % 10 === 0) {
+        ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 2, 20);
+    }
+
+    if (frameCount % 280 === 0) spawnEnemy(); 
     frameCount++;
 
-    // رسم خط فاصل للشبكة
-    ctx.strokeStyle = '#333';
-    ctx.beginPath();
-    ctx.moveTo(0, gridStartY - 10);
-    ctx.lineTo(canvas.width, gridStartY - 10);
-    ctx.stroke();
-
-    // تحديث ورسم الأعداء
-    ctx.font = 'bold 24px Arial';
+    ctx.font = 'bold 26px "Cairo", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
@@ -474,7 +641,12 @@ function update() {
         let e = enemies[i];
         e.y += e.speed;
 
-        // رسم العدو
+        const gradient = ctx.createRadialGradient(e.x, e.y, 5, e.x, e.y, e.radius + 5);
+        gradient.addColorStop(0, e.color);
+        gradient.addColorStop(1, 'transparent');
+        ctx.fillStyle = gradient;
+        ctx.beginPath(); ctx.arc(e.x, e.y, e.radius + 10, 0, Math.PI * 2); ctx.fill();
+
         ctx.beginPath();
         ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
         ctx.fillStyle = '#111';
@@ -484,37 +656,37 @@ function update() {
         ctx.stroke();
         
         ctx.fillStyle = '#fff';
-        ctx.fillText(e.value, e.x, e.y);
+        // تطبيق تحويل الأرقام على الأعداء
+        ctx.fillText(formatNum(e.value), e.x, e.y + 4);
 
-        // التحقق من الخسارة
         if (e.y > gridStartY - e.radius) {
             enemies.splice(i, 1);
             lives--;
             playSound('error');
-            createExplosion(e.x, e.y, '#f00');
+            createExplosion(e.x, e.y, '#ff0055');
             if (lives <= 0) endGame();
         }
     }
 
-    // تحديث الجسيمات
     for (let i = particles.length - 1; i >= 0; i--) {
         let p = particles[i];
         p.x += p.vx;
         p.y += p.vy;
         p.life--;
+        ctx.globalAlpha = p.life / 40;
         ctx.fillStyle = p.color;
-        ctx.fillRect(p.x, p.y, 3, 3);
+        ctx.fillRect(p.x, p.y, 4, 4);
         if (p.life <= 0) particles.splice(i, 1);
     }
+    ctx.globalAlpha = 1;
 
-    // تحديث الليزر
     for (let i = lasers.length - 1; i >= 0; i--) {
         let l = lasers[i];
         ctx.beginPath();
         ctx.moveTo(l.x1, l.y1);
         ctx.lineTo(l.x2, l.y2);
         ctx.strokeStyle = l.color;
-        ctx.lineWidth = l.life / 2;
+        ctx.lineWidth = l.hit ? l.life / 2 : 1;
         ctx.stroke();
         l.life--;
         if (l.life <= 0) lasers.splice(i, 1);
@@ -527,27 +699,22 @@ function update() {
 }
 
 function updateUI() {
-    document.getElementById('score-display').innerText = `النقاط: ${score}`;
+    document.getElementById('score-display').innerText = `النقاط: ${formatNum(score)}`;
     document.getElementById('lives-display').innerText = '❤️'.repeat(lives);
 }
-
-// ==========================================
-// إدارة حالة اللعبة
-// ==========================================
 
 function startGame() {
     document.getElementById('start-screen').classList.add('hidden');
     document.getElementById('game-over-screen').classList.add('hidden');
     
-    if (audioCtx && audioCtx.state === 'suspended') {
-        audioCtx.resume();
-    }
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
 
     gameState = 'PLAYING';
     score = 0;
     lives = 3;
     enemies = [];
     particles = [];
+    lasers = [];
     difficultyLevel = 1;
     frameCount = 0;
     update();
@@ -555,7 +722,7 @@ function startGame() {
 
 function endGame() {
     gameState = 'GAMEOVER';
-    document.getElementById('final-score').innerText = `النقاط النهائية: ${score}`;
+    document.getElementById('final-score').innerText = `النقاط النهائية: ${formatNum(score)}`;
     document.getElementById('game-over-screen').classList.remove('hidden');
 }
 
@@ -563,20 +730,21 @@ function resetGame() {
     startGame();
 }
 
-// مستمعي الأحداث
 canvas.addEventListener('mousedown', handleInputStart);
-canvas.addEventListener('mousemove', handleInputMove);
+window.addEventListener('mousemove', handleInputMove);
 window.addEventListener('mouseup', handleInputEnd);
 
 canvas.addEventListener('touchstart', handleInputStart, { passive: false });
 canvas.addEventListener('touchmove', handleInputMove, { passive: false });
 canvas.addEventListener('touchend', handleInputEnd, { passive: false });
 
-// تشغيل أولي
-resize();
+// تشغيل مرة واحدة لضبط التبديل في البداية
+toggleNumerals();
 
 </script>
 </body>
 </html>
+
+
 
 
