@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>صياد الأرقام</title>
+    <title>صياد الأرقام - النسخة الاحترافية</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
 
@@ -24,6 +24,7 @@
             height: 100%;
         }
 
+        /* --- واجهة المستخدم العلوية (HUD) --- */
         #ui-layer {
             position: absolute;
             top: 0;
@@ -36,25 +37,42 @@
         }
 
         .hud-top {
-            padding: 20px;
+            padding: 15px 20px;
             display: flex;
             justify-content: space-between;
-            font-size: 24px;
+            align-items: center;
+            font-size: 20px;
             font-weight: bold;
             text-shadow: 0 2px 4px rgba(0,0,0,0.8);
             z-index: 5;
+            pointer-events: auto; /* لتفعيل زر الخروج */
         }
 
         #score-display { color: #00ffcc; }
         #lives-display { color: #ff0055; letter-spacing: 5px; }
 
+        .exit-btn-game {
+            background: rgba(255, 0, 85, 0.2);
+            border: 1px solid #ff0055;
+            color: #ff0055;
+            padding: 5px 15px;
+            border-radius: 8px;
+            font-family: 'Cairo', sans-serif;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        .exit-btn-game:hover { background: #ff0055; color: white; }
+
+        /* --- الشاشات (Overlay) --- */
         .overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(10, 10, 18, 0.95);
+            background: rgba(10, 10, 18, 0.98);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -62,15 +80,16 @@
             text-align: center;
             pointer-events: auto;
             z-index: 100;
-            padding: 20px;
+            padding: 15px;
             box-sizing: border-box;
+            overflow-y: auto;
         }
 
         .hidden { display: none !important; }
 
         h1 {
-            font-size: 3.5rem;
-            margin: 0 0 10px 0;
+            font-size: 2.5rem;
+            margin: 10px 0;
             background: linear-gradient(to bottom, #00ffcc, #0088aa);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -78,13 +97,22 @@
             filter: drop-shadow(0 0 10px rgba(0, 255, 204, 0.3));
         }
 
-        p { font-size: 1.1rem; color: #aaa; max-width: 80%; line-height: 1.6; margin-bottom: 30px; }
+        h2 {
+            font-size: 1.5rem;
+            color: #fff;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #00ffcc;
+            padding-bottom: 5px;
+        }
 
+        p { font-size: 1.1rem; color: #aaa; max-width: 90%; line-height: 1.5; margin-bottom: 25px; }
+
+        /* الأزرار العامة */
         .btn-primary {
             background: #00ffcc;
             border: none;
-            padding: 15px 50px;
-            font-size: 1.4rem;
+            padding: 12px 40px;
+            font-size: 1.3rem;
             color: #0a0a12;
             font-weight: 900;
             border-radius: 8px;
@@ -93,164 +121,299 @@
             transition: all 0.2s;
             font-family: 'Cairo', sans-serif;
             margin-bottom: 15px;
-            width: 100%;
-            max-width: 300px;
+            width: 90%;
+            max-width: 350px;
         }
-
         .btn-primary:active { transform: scale(0.95); background: #fff; }
+        .btn-primary:disabled { background: #444; color: #777; cursor: not-allowed; box-shadow: none; }
 
-        .btn-share {
+        .btn-secondary {
             background: transparent;
             border: 2px solid #00ffcc;
             color: #00ffcc;
-            padding: 12px 30px;
+            padding: 10px 30px;
             font-size: 1.1rem;
             font-weight: 700;
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s;
             font-family: 'Cairo', sans-serif;
-            margin-bottom: 25px;
-            width: 100%;
-            max-width: 300px;
+            margin-bottom: 15px;
+            width: 90%;
+            max-width: 350px;
         }
+        .btn-secondary:hover { background: rgba(0, 255, 204, 0.1); }
+        .btn-secondary:active { transform: scale(0.95); }
 
-        .btn-share:hover { background: rgba(0, 255, 204, 0.1); }
-        .btn-share:active { transform: scale(0.95); }
-
-        /* مفتاح التبديل للإعدادات - تم تعديله ليضمن الترتيب الصحيح */
-        .settings-container {
-            margin-top: 20px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            background: rgba(255,255,255,0.1);
+        .btn-back {
+            background: rgba(255, 255, 255, 0.05);
+            color: #aaa;
+            border: 1px solid #555;
             padding: 10px 20px;
-            border-radius: 50px;
-            direction: ltr; /* مهم جداً: إجبار الاتجاه من اليسار لليمين لضمان تطابق الزر */
+            border-radius: 8px;
+            margin-top: 10px;
+            cursor: pointer;
+            font-family: 'Cairo', sans-serif;
+            width: 90%;
+            max-width: 350px;
+            transition: all 0.2s;
+        }
+        .btn-back:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+
+        .btn-danger {
+            background: #ff0055;
+            color: white;
+            border: none;
+            padding: 10px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-family: 'Cairo', sans-serif;
+            font-size: 1.1rem;
         }
 
-        .toggle-label {
-            color: #fff;
+        /* --- صناديق الإعدادات --- */
+        .mission-config {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+            width: 95%;
+            max-width: 450px;
+        }
+
+        .mission-title {
+            font-size: 1rem;
+            color: #00ffcc;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        /* أزرار الصعوبة */
+        .difficulty-btns { display: flex; justify-content: center; gap: 8px; }
+        .diff-btn {
+            background: transparent;
+            border: 2px solid #444;
+            color: #888;
+            padding: 8px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: 'Cairo', sans-serif;
+            font-weight: bold;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+            flex: 1;
+        }
+        .diff-btn.active {
+            border-color: #ff0055;
+            background: rgba(255, 0, 85, 0.1);
+            color: white;
+            box-shadow: 0 0 10px rgba(255, 0, 85, 0.2);
+        }
+
+        /* شبكة الجداول */
+        .tables-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+        .table-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 10px;
+            border: 2px solid #333;
+            background: #1a1a24;
+            color: #888;
             font-size: 1.2rem;
             font-weight: bold;
-            font-family: sans-serif; /* لضمان ظهور الأرقام بشكل صحيح */
-        }
-
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 60px;
-            height: 34px;
-        }
-
-        .toggle-switch input { opacity: 0; width: 0; height: 0; }
-
-        .slider {
-            position: absolute;
             cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #333;
-            transition: .4s;
-            border-radius: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            font-family: sans-serif;
         }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 26px;
-            width: 26px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
+        .table-btn.active {
+            border-color: #00ffcc;
+            background: rgba(0, 255, 204, 0.2);
+            color: #fff;
+            box-shadow: 0 0 10px rgba(0, 255, 204, 0.3);
+            transform: scale(1.05);
         }
+        .select-actions { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
+        .action-btn-small { font-size: 0.8rem; background: transparent; border: 1px solid #555; color: #aaa; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
 
-        input:checked + .slider {
-            background-color: #00ffcc;
+        /* تبديل الأرقام */
+        .settings-container { display: flex; align-items: center; justify-content: center; gap: 10px; direction: ltr; }
+        .toggle-label { color: #fff; font-size: 1rem; font-weight: bold; font-family: sans-serif; }
+        .toggle-switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #00ffcc; }
+        input:checked + .slider:before { transform: translateX(22px); }
+
+        /* صندوق المطور */
+        .dev-container {
+            margin-top: 20px;
+            width: 90%;
+            max-width: 400px;
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
         }
-
-        input:checked + .slider:before {
-            transform: translateX(26px);
-        }
-
-        /* تنسيق صندوق المطور */
-        .dev-box {
-            margin-top: auto;
-            background: rgba(255, 255, 255, 0.08);
+        
+        .dev-link {
+            text-decoration: none;
+            background: rgba(37, 211, 102, 0.1);
+            border: 1px solid #25D366;
             padding: 10px 20px;
             border-radius: 12px;
             display: flex;
             align-items: center;
-            justify-content: center;
             gap: 15px;
-            border: 1px solid rgba(0, 255, 204, 0.2);
-            margin-bottom: 20px;
-        }
-
-        .dev-text {
-            color: #ddd;
-            font-size: 0.9rem;
-            margin: 0;
-            font-weight: bold;
-        }
-
-        .whatsapp-icon {
-            width: 32px;
-            height: 32px;
-            fill: #25D366;
+            transition: all 0.3s;
             cursor: pointer;
-            transition: transform 0.2s;
+            width: 100%;
+            justify-content: center;
+        }
+        .dev-link:hover { background: rgba(37, 211, 102, 0.2); transform: scale(1.02); }
+        .dev-text { color: #fff; font-size: 0.9rem; font-weight: bold; display: flex; flex-direction: column; text-align: right; }
+        .dev-label { font-size: 0.75rem; color: #aaa; font-weight: normal; }
+        .whatsapp-icon { width: 32px; height: 32px; fill: #25D366; }
+
+        .learning-tip {
+            color: #ffcc00;
+            font-size: 1rem;
+            margin-top: 10px;
+            background: rgba(255, 204, 0, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px dashed #ffcc00;
         }
 
-        .whatsapp-icon:hover { transform: scale(1.15); filter: drop-shadow(0 0 5px #25D366); }
-
+        /* نافذة تأكيد الخروج */
+        #exit-confirm-modal .mission-config { border-color: #ff0055; background: rgba(255, 0, 85, 0.05); }
     </style>
 </head>
 <body>
 
+    <!-- طبقة واجهة المستخدم أثناء اللعب -->
     <div id="ui-layer">
         <div class="hud-top">
-            <div id="score-display">النقاط: ٠</div>
+            <button class="exit-btn-game" onclick="showExitConfirm()">❌ خروج</button>
             <div id="lives-display">❤️❤️❤️</div>
+            <div id="score-display">النقاط: ٠</div>
         </div>
     </div>
 
-    <!-- شاشة البداية -->
+    <!-- 1. الشاشة الرئيسية (Start Screen) -->
     <div id="start-screen" class="overlay">
         <h1>صياد الأرقام</h1>
-        <p>الأرقام تهجم عليك!<br>مهمتك: رسم "مستطيل" يطابق قيمة الرقم لتدميره.<br><br>مثال: لتدمير <strong><span class="demo-num">12</span></strong>، ارسم <strong><span class="demo-dim">3×4</span></strong> أو <strong><span class="demo-dim">2×6</span></strong>.</p>
         
-        <button class="btn-primary" onclick="startGame()">ابدأ اللعب</button>
+        <p>
+            تحدي السرعة والذكاء في جدول الضرب.<br>
+            هل أنت مستعد للمهمة؟
+        </p>
         
-        <div class="settings-container">
-            <span class="toggle-label">123</span>
-            <label class="toggle-switch">
-                <input type="checkbox" id="num-toggle" onchange="toggleNumerals()">
-                <span class="slider"></span>
-            </label>
-            <span class="toggle-label">١٢٣</span>
-        </div>
+        <button class="btn-primary" onclick="openSetup()">🚀 مهمة جديدة</button>
+        <button class="btn-secondary" onclick="openSettings()">⚙️ الإعدادات العامة</button>
     </div>
 
-    <!-- شاشة الخسارة -->
-    <div id="game-over-screen" class="overlay hidden">
-        <h1 style="color: #ff0055; -webkit-text-fill-color: #ff0055;">انتهت اللعبة</h1>
-        <p id="final-score" style="color: white; font-size: 1.5rem; margin-bottom: 20px;">النقاط: ٠</p>
-        
-        <button class="btn-primary" onclick="resetGame()">العب مجدداً</button>
-        <button class="btn-share" onclick="shareGame()">شارك التحدي مع أصدقائك</button>
+    <!-- 2. شاشة تجهيز المهمة (Setup Screen) -->
+    <div id="setup-screen" class="overlay hidden">
+        <h2>تجهيز المهمة</h2>
+        <p style="font-size:0.9rem; margin-bottom: 10px; color:#ffcc00;">يجب اختيار جدول واحد على الأقل</p>
 
-        <!-- صندوق المطور -->
-        <div class="dev-box">
-            <p class="dev-text">تطوير محمد جبلي</p>
-            <a href="https://wa.me/966505501575" target="_blank" aria-label="تواصل عبر واتساب">
+        <!-- اختيار الجداول -->
+        <div class="mission-config">
+            <div class="mission-title">1. جداول الضرب المستهدفة:</div>
+            <div class="tables-grid" id="tables-container"></div>
+            <div class="select-actions">
+                <button class="action-btn-small" onclick="selectAllTables()">تحديد الكل</button>
+                <button class="action-btn-small" onclick="deselectAllTables()">إلغاء الكل</button>
+            </div>
+        </div>
+
+        <!-- اختيار الصعوبة -->
+        <div class="mission-config">
+            <div class="mission-title">2. مستوى التهديد (الصعوبة):</div>
+            <div class="difficulty-btns">
+                <button class="diff-btn" onclick="setDifficulty('easy')" id="btn-easy">سهل</button>
+                <button class="diff-btn active" onclick="setDifficulty('medium')" id="btn-medium">متوسط</button>
+                <button class="diff-btn" onclick="setDifficulty('hard')" id="btn-hard">صعب</button>
+            </div>
+        </div>
+
+        <button id="launch-btn" class="btn-primary" onclick="launchGame()" disabled>اختر جدولاً للبدء</button>
+        <button class="btn-back" onclick="backToStart()">إلغاء وعودة</button>
+    </div>
+
+    <!-- 3. شاشة الإعدادات العامة -->
+    <div id="settings-screen" class="overlay hidden">
+        <h2>الإعدادات العامة</h2>
+
+        <!-- نوع الأرقام -->
+        <div class="mission-config">
+            <div class="mission-title">شكل الأرقام:</div>
+            <div class="settings-container">
+                <span class="toggle-label">123</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="num-toggle" onchange="toggleNumerals()">
+                    <span class="slider"></span>
+                </label>
+                <span class="toggle-label">١٢٣</span>
+            </div>
+        </div>
+        
+        <button class="btn-secondary" onclick="shareGameGeneral()">مشاركة اللعبة</button>
+
+        <!-- قسم المطور -->
+        <div class="dev-container">
+            <a href="#" target="_blank" class="dev-link wa-contact-link">
+                <div class="dev-text">
+                    <span class="dev-label">تطوير وبرمجة</span>
+                    <span>محمد جبلي</span>
+                </div>
                 <svg class="whatsapp-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
-                    <!-- Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
                     <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7 .9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/>
                 </svg>
             </a>
+        </div>
+
+        <button class="btn-back" onclick="backToStart()">↩ العودة للرئيسية</button>
+    </div>
+
+    <!-- 4. شاشة الخسارة (Game Over) -->
+    <div id="game-over-screen" class="overlay hidden">
+        <h1 style="color: #ff0055; -webkit-text-fill-color: #ff0055;">انتهت اللعبة</h1>
+        <p id="final-score" style="color: white; font-size: 1.5rem; margin-bottom: 10px;">النقاط: ٠</p>
+        
+        <div id="death-reason" class="learning-tip hidden"></div>
+        <br>
+
+        <button class="btn-primary" onclick="backToStart()">العودة للرئيسية</button>
+        <button class="btn-secondary" onclick="shareChallenge()">شارك التحدي</button>
+
+        <div class="dev-container">
+            <a href="#" target="_blank" class="dev-link wa-contact-link">
+                <div class="dev-text">
+                    <span class="dev-label">تطوير وبرمجة</span>
+                    <span>محمد جبلي</span>
+                </div>
+                <svg class="whatsapp-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+                    <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7 .9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/>
+                </svg>
+            </a>
+        </div>
+    </div>
+
+    <!-- 5. نافذة تأكيد الخروج -->
+    <div id="exit-confirm-modal" class="overlay hidden" style="background: rgba(0,0,0,0.85); z-index: 200;">
+        <div class="mission-config" style="max-width: 300px;">
+            <h2 style="border: none; margin-bottom: 10px; color: #ff0055;">⚠️ تنبيه</h2>
+            <p style="color: #fff;">هل أنت متأكد من الخروج والعودة للقائمة الرئيسية؟</p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button class="btn-danger" onclick="confirmExit()">نعم، خروج</button>
+                <button class="btn-back" style="margin-top: 0;" onclick="cancelExit()">إلغاء</button>
+            </div>
         </div>
     </div>
 
@@ -260,8 +423,7 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// إعدادات
-let useArabicNumerals = false; // false = 123 (الافتراضي: يسار), true = ١٢٣ (يمين)
+let useArabicNumerals = false; 
 
 // حالة اللعبة
 let gameState = 'START'; 
@@ -269,10 +431,22 @@ let score = 0;
 let lives = 3;
 let frameCount = 0;
 let difficultyLevel = 1;
+let killerEnemy = null;
+
+// إعدادات الصعوبة
+let currentDifficulty = 'medium';
+const difficultySettings = {
+    easy: { baseSpeed: 0.3, spawnRate: 220, speedRamp: 5000 },
+    medium: { baseSpeed: 0.7, spawnRate: 160, speedRamp: 2500 },
+    hard: { baseSpeed: 1.2, spawnRate: 100, speedRamp: 1500 }
+};
+
+// إعدادات الجداول - نبدأ فارغة لإجبار اللاعب على الاختيار
+let selectedTables = []; 
 
 // الشبكة
 const GRID_COLS = 10;
-const GRID_ROWS = 10;
+let GRID_ROWS = 10; 
 let cellSize = 0;
 let gridStartX = 0;
 let gridStartY = 0;
@@ -293,37 +467,160 @@ let lasers = [];
 let audioCtx = null;
 
 // ==========================================
-// دالة المشاركة
+// التنقل وإدارة الشاشات
 // ==========================================
-function shareGame() {
-    const currentScore = formatNum(score);
-    const text = `تحدي الذكاء والسرعة! 🚀\nلقد حققت ${currentScore} نقطة في لعبة *صياد الأرقام*... هل تمتلك المهارة لهزيمتي؟ 🔥\nجرب اللعبة الآن وأرني ما لديك! 💪\n`;
-    const url = window.location.href; // رابط اللعبة
+function hideAllScreens() {
+    document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
+}
 
-    if (navigator.share) {
-        navigator.share({
-            title: 'لعبة صياد الأرقام',
-            text: text,
-            url: url
-        }).catch(err => {
-            console.log('Error sharing:', err);
-        });
-    } else {
-        // بديل في حال عدم دعم المتصفح للمشاركة المباشرة
-        // نقوم بنسخ النص للحافظة
-        const dummy = document.createElement("textarea");
-        document.body.appendChild(dummy);
-        dummy.value = text + " " + url;
-        dummy.select();
-        document.execCommand("copy");
-        document.body.removeChild(dummy);
-        alert("تم نسخ رسالة التحدي! شاركها مع أصدقائك الآن.");
+function backToStart() {
+    gameState = 'START';
+    hideAllScreens();
+    document.getElementById('start-screen').classList.remove('hidden');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function openSettings() {
+    hideAllScreens();
+    document.getElementById('settings-screen').classList.remove('hidden');
+}
+
+function openSetup() {
+    hideAllScreens();
+    document.getElementById('setup-screen').classList.remove('hidden');
+    // إعادة ضبط الجداول لتكون فارغة في كل مرة لضمان الاختيار، أو الاحتفاظ بآخر خيار (سأحتفظ بآخر خيار لكن أتأكد من صلاحيته)
+    if (selectedTables.length === 0) {
+        deselectAllTables(); // لضمان حالة الواجهة
     }
+    checkLaunchReadiness();
+}
+
+function showExitConfirm() {
+    // إيقاف اللعبة مؤقتاً ليس ضرورياً لأن السرعة بطيئة، لكن سنظهر النافذة فوق اللعبة
+    document.getElementById('exit-confirm-modal').classList.remove('hidden');
+}
+
+function confirmExit() {
+    document.getElementById('exit-confirm-modal').classList.add('hidden');
+    backToStart();
+}
+
+function cancelExit() {
+    document.getElementById('exit-confirm-modal').classList.add('hidden');
 }
 
 // ==========================================
-// دالة تحويل الأرقام
+// إدارة واتساب
 // ==========================================
+function updateWhatsAppLink() {
+    const phone = "966505501575";
+    const gameName = "لعبة صياد الأرقام";
+    const gameLink = window.location.href;
+    const message = `السلام عليكم ورحمة الله وبركاته
+اتواصل معاك بخصوص ${gameName}
+${gameLink}
+`;
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    document.querySelectorAll('.wa-contact-link').forEach(link => { link.href = url; });
+}
+
+// ==========================================
+// منطق تجهيز المهمة (Setup)
+// ==========================================
+function initTableSelection() {
+    const container = document.getElementById('tables-container');
+    container.innerHTML = '';
+    
+    for (let i = 1; i <= 10; i++) {
+        const btn = document.createElement('div');
+        // إزالة active الافتراضي
+        btn.className = 'table-btn';
+        btn.innerText = i; 
+        btn.dataset.num = i;
+        btn.onclick = () => toggleTable(i, btn);
+        container.appendChild(btn);
+    }
+}
+
+function toggleTable(num, btn) {
+    const index = selectedTables.indexOf(num);
+    if (index === -1) {
+        selectedTables.push(num);
+        btn.classList.add('active');
+    } else {
+        selectedTables.splice(index, 1);
+        btn.classList.remove('active');
+    }
+    checkLaunchReadiness();
+}
+
+function selectAllTables() {
+    selectedTables = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    document.querySelectorAll('.table-btn').forEach(b => b.classList.add('active'));
+    checkLaunchReadiness();
+}
+
+function deselectAllTables() {
+    selectedTables = [];
+    document.querySelectorAll('.table-btn').forEach(b => b.classList.remove('active'));
+    checkLaunchReadiness();
+}
+
+function checkLaunchReadiness() {
+    const launchBtn = document.getElementById('launch-btn');
+    if (selectedTables.length === 0) {
+        launchBtn.disabled = true;
+        launchBtn.innerText = "اختر جدولاً واحداً على الأقل";
+        launchBtn.style.background = "#444";
+    } else {
+        launchBtn.disabled = false;
+        launchBtn.innerText = "بدء المهمة";
+        launchBtn.style.background = "#00ffcc";
+    }
+}
+
+function setDifficulty(level) {
+    currentDifficulty = level;
+    document.querySelectorAll('.diff-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`btn-${level}`).classList.add('active');
+}
+
+// ==========================================
+// بدء اللعبة
+// ==========================================
+function launchGame() {
+    if (selectedTables.length === 0) return;
+
+    hideAllScreens();
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    
+    gameState = 'PLAYING'; 
+    score = 0; 
+    lives = 3; 
+    enemies = []; 
+    particles = []; 
+    lasers = []; 
+    frameCount = 0; 
+    killerEnemy = null; 
+    update(); 
+}
+
+// ==========================================
+// منطق اللعبة
+// ==========================================
+function getBestFactors(num) {
+    let bestA = 1; let bestB = num;
+    for (let i = 2; i <= 10; i++) {
+        if (num % i === 0) {
+            let j = num / i;
+            if (j <= 10) {
+                if (Math.abs(i - j) < Math.abs(bestA - bestB)) { bestA = i; bestB = j; }
+            }
+        }
+    }
+    return { a: bestA, b: bestB };
+}
+
 function formatNum(n) {
     if (!useArabicNumerals) return n;
     return n.toString().replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
@@ -331,420 +628,192 @@ function formatNum(n) {
 
 function toggleNumerals() {
     const checkbox = document.getElementById('num-toggle');
-    // الزر على اليسار (غير مفعل) = 123
-    // الزر على اليمين (مفعل) = ١٢٣
     useArabicNumerals = checkbox.checked;
     
-    // تحديث المثال في شاشة البداية
     const demoNum = document.querySelector('.demo-num');
-    const demoDim = document.querySelectorAll('.demo-dim');
+    const demoDim = document.querySelector('.demo-dim');
+    if(demoNum) demoNum.innerText = formatNum(12);
+    if(demoDim) demoDim.innerText = formatNum(3) + "×" + formatNum(4);
     
-    demoNum.innerText = formatNum(12);
-    demoDim[0].innerText = formatNum(3) + "×" + formatNum(4);
-    demoDim[1].innerText = formatNum(2) + "×" + formatNum(6);
+    document.querySelectorAll('.table-btn').forEach(btn => {
+        btn.innerText = formatNum(btn.dataset.num);
+    });
 }
 
-// ضبط الحجم الأولي
 function resize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-
-    const margin = 20;
-    const availableWidth = Math.min(canvas.width - (margin * 2), 600);
-    cellSize = Math.floor(availableWidth / GRID_COLS);
-
+    cellSize = Math.floor(canvas.width / GRID_COLS);
+    GRID_ROWS = Math.ceil(canvas.height / cellSize);
     gridStartX = (canvas.width - (cellSize * GRID_COLS)) / 2;
-    gridStartY = canvas.height - (cellSize * GRID_ROWS) - 80; 
+    gridStartY = 0; 
 }
-
 window.addEventListener('resize', resize);
 resize();
 
-// ==========================================
-// منطق الأعداء
-// ==========================================
-
-function getFactorsForLevel(level) {
-    if (level === 1) return [1, 2, 5, 10]; 
-    if (level === 2) return [1, 2, 3, 4, 5, 10];
-    if (level === 3) return [1, 2, 3, 4, 5, 6, 9, 10];
-    return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-}
-
 function spawnEnemy() {
-    const factors = getFactorsForLevel(difficultyLevel);
-    const f1 = factors[Math.floor(Math.random() * factors.length)];
+    const f1 = selectedTables[Math.floor(Math.random() * selectedTables.length)];
     const f2 = Math.floor(Math.random() * 10) + 1;
     const value = f1 * f2;
-    
-    // السرعة
-    const speed = 0.15 + (score / 3000);
+    const factorsObj = getBestFactors(value);
+    const settings = difficultySettings[currentDifficulty];
+    const speed = settings.baseSpeed + (score / settings.speedRamp);
 
     enemies.push({
         x: Math.random() * (canvas.width - 60) + 30,
         y: -60,
         value: value,
+        factors: factorsObj, 
         radius: 28,
         speed: speed,
         color: `hsl(${Math.random() * 360}, 70%, 60%)`
     });
 }
 
-// ==========================================
-// الصوت
-// ==========================================
 function playSound(type) {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    
     const osc = audioCtx.createOscillator();
     const gainNode = audioCtx.createGain();
-    
     osc.connect(gainNode);
     gainNode.connect(audioCtx.destination);
-    
     const now = audioCtx.currentTime;
 
     if (type === 'pop') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(600, now);
-        osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
-        gainNode.gain.setValueAtTime(0.05, now);
-        gainNode.gain.linearRampToValueAtTime(0, now + 0.1);
-        osc.start();
-        osc.stop(now + 0.1);
+        osc.type = 'sine'; osc.frequency.setValueAtTime(600, now); osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1); gainNode.gain.setValueAtTime(0.05, now); gainNode.gain.linearRampToValueAtTime(0, now + 0.1);
     } else if (type === 'hit') {
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(200, now);
-        osc.frequency.exponentialRampToValueAtTime(50, now + 0.3);
-        gainNode.gain.setValueAtTime(0.1, now);
-        gainNode.gain.linearRampToValueAtTime(0, now + 0.3);
-        osc.start();
-        osc.stop(now + 0.3);
+        osc.type = 'square'; osc.frequency.setValueAtTime(200, now); osc.frequency.exponentialRampToValueAtTime(50, now + 0.3); gainNode.gain.setValueAtTime(0.1, now); gainNode.gain.linearRampToValueAtTime(0, now + 0.3);
     } else if (type === 'error') {
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(100, now);
-        osc.frequency.linearRampToValueAtTime(50, now + 0.3);
-        gainNode.gain.setValueAtTime(0.1, now);
-        gainNode.gain.linearRampToValueAtTime(0, now + 0.3);
-        osc.start();
-        osc.stop(now + 0.3);
+        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, now); osc.frequency.linearRampToValueAtTime(50, now + 0.3); gainNode.gain.setValueAtTime(0.1, now); gainNode.gain.linearRampToValueAtTime(0, now + 0.3);
     }
+    osc.start(); osc.stop(now + 0.3);
 }
-
-// ==========================================
-// المدخلات
-// ==========================================
 
 function getGridPos(clientX, clientY) {
     const x = clientX - gridStartX;
     const y = clientY - gridStartY;
     const col = Math.floor(x / cellSize);
     const row = Math.floor(y / cellSize);
-    
-    const clampedCol = Math.max(0, Math.min(GRID_COLS - 1, col));
-    const clampedRow = Math.max(0, Math.min(GRID_ROWS - 1, row));
-
-    if (x > -50 && x < (GRID_COLS * cellSize) + 50 && 
-        y > -50 && y < (GRID_ROWS * cellSize) + 50) {
-        return { col: clampedCol, row: clampedRow };
-    }
+    if (col >= 0 && col < GRID_COLS && row >= 0 && row < GRID_ROWS) return { col, row };
     return null;
 }
 
 function handleInputStart(e) {
     if (gameState !== 'PLAYING') return;
-    
     const touch = e.touches ? e.touches[0] : e;
     const pos = getGridPos(touch.clientX, touch.clientY);
-    
-    if (pos) {
-        e.preventDefault();
-        isDragging = true;
-        startCell = pos;
-        currentCell = pos;
-        dragPosition = { x: touch.clientX, y: touch.clientY };
-        updateSelection();
-        playSound('pop');
-    }
+    if (pos) { e.preventDefault(); isDragging = true; startCell = pos; currentCell = pos; dragPosition = { x: touch.clientX, y: touch.clientY }; updateSelection(); playSound('pop'); }
 }
-
 function handleInputMove(e) {
     if (!isDragging) return;
     e.preventDefault();
-    
     const touch = e.touches ? e.touches[0] : e;
     dragPosition = { x: touch.clientX, y: touch.clientY };
     const pos = getGridPos(touch.clientX, touch.clientY);
-    
-    if (pos) {
-        if (pos.col !== currentCell.col || pos.row !== currentCell.row) {
-            currentCell = pos;
-            playSound('pop');
-        }
-        updateSelection();
-    }
+    if (pos) { if (pos.col !== currentCell.col || pos.row !== currentCell.row) { currentCell = pos; playSound('pop'); } updateSelection(); }
 }
-
-function handleInputEnd(e) {
-    if (!isDragging) return;
-    e.preventDefault();
-    isDragging = false;
-    fireWeapon();
-    selectedRect = null;
-}
+function handleInputEnd(e) { if (!isDragging) return; e.preventDefault(); isDragging = false; fireWeapon(); selectedRect = null; }
 
 function updateSelection() {
-    const c1 = Math.min(startCell.col, currentCell.col);
-    const c2 = Math.max(startCell.col, currentCell.col);
-    const r1 = Math.min(startCell.row, currentCell.row);
-    const r2 = Math.max(startCell.row, currentCell.row);
-    
-    const w = (c2 - c1) + 1;
-    const h = (r2 - r1) + 1;
-    const area = w * h;
-    
+    const c1 = Math.min(startCell.col, currentCell.col); const c2 = Math.max(startCell.col, currentCell.col);
+    const r1 = Math.min(startCell.row, currentCell.row); const r2 = Math.max(startCell.row, currentCell.row);
+    const w = (c2 - c1) + 1; const h = (r2 - r1) + 1; const area = w * h;
     selectedRect = { c: c1, r: r1, w: w, h: h, area: area };
 }
 
 function fireWeapon() {
     if (!selectedRect) return;
-    
-    const damage = selectedRect.area;
-    let hitSomething = false;
-
-    const rectCenterX = gridStartX + (selectedRect.c * cellSize) + (selectedRect.w * cellSize / 2);
-    const rectCenterY = gridStartY + (selectedRect.r * cellSize) + (selectedRect.h * cellSize / 2);
-
+    const damage = selectedRect.area; let hitSomething = false;
+    const laserStartX = canvas.width / 2; const laserStartY = canvas.height;
     for (let i = enemies.length - 1; i >= 0; i--) {
         if (enemies[i].value === damage) {
             createExplosion(enemies[i].x, enemies[i].y, enemies[i].color);
-            lasers.push({
-                x1: rectCenterX, y1: rectCenterY, 
-                x2: enemies[i].x, y2: enemies[i].y, 
-                life: 15, color: '#00ffcc', hit: true
-            });
-            enemies.splice(i, 1);
-            score += 10;
-            hitSomething = true;
-            playSound('hit');
+            lasers.push({ x1: laserStartX, y1: laserStartY, x2: enemies[i].x, y2: enemies[i].y, life: 15, color: '#00ffcc', hit: true });
+            enemies.splice(i, 1); score += 10; hitSomething = true; playSound('hit');
         }
     }
-
     if (!hitSomething) {
-        lasers.push({
-            x1: rectCenterX, y1: rectCenterY, 
-            x2: rectCenterX, y2: -50, 
-            life: 8, color: '#ff0055', hit: false
-        });
+        const rectCenterX = gridStartX + (selectedRect.c * cellSize) + (selectedRect.w * cellSize / 2);
+        const rectCenterY = gridStartY + (selectedRect.r * cellSize) + (selectedRect.h * cellSize / 2);
+        lasers.push({ x1: laserStartX, y1: laserStartY, x2: rectCenterX, y2: rectCenterY, life: 8, color: '#ff0055', hit: false });
         playSound('error');
     }
-    
-    if (score > 100) difficultyLevel = 2;
-    if (score > 300) difficultyLevel = 3;
-    if (score > 600) difficultyLevel = 4;
+    if (score > 100) difficultyLevel = 2; if (score > 300) difficultyLevel = 3; if (score > 600) difficultyLevel = 4;
 }
 
 function createExplosion(x, y, color) {
     for (let i = 0; i < 20; i++) {
-        particles.push({
-            x: x, y: y,
-            vx: (Math.random() - 0.5) * 12,
-            vy: (Math.random() - 0.5) * 12,
-            life: 40,
-            color: color
-        });
+        particles.push({ x: x, y: y, vx: (Math.random() - 0.5) * 12, vy: (Math.random() - 0.5) * 12, life: 40, color: color });
     }
 }
 
-// ==========================================
-// الرسم
-// ==========================================
-
 function drawGrid() {
-    ctx.lineWidth = 1;
-    
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-    ctx.fillRect(gridStartX, gridStartY, GRID_COLS * cellSize, GRID_ROWS * cellSize);
-
-    ctx.strokeStyle = '#333';
-    for (let c = 0; c <= GRID_COLS; c++) {
-        const x = gridStartX + c * cellSize;
-        ctx.beginPath(); ctx.moveTo(x, gridStartY); ctx.lineTo(x, gridStartY + GRID_ROWS * cellSize); ctx.stroke();
-    }
-    for (let r = 0; r <= GRID_ROWS; r++) {
-        const y = gridStartY + r * cellSize;
-        ctx.beginPath(); ctx.moveTo(gridStartX, y); ctx.lineTo(gridStartX + GRID_COLS * cellSize, y); ctx.stroke();
-    }
+    ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+    for (let c = 0; c <= GRID_COLS; c++) { const x = gridStartX + c * cellSize; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); }
+    for (let r = 0; r <= GRID_ROWS; r++) { const y = gridStartY + r * cellSize; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
+    ctx.fillStyle = '#222'; ctx.beginPath(); ctx.arc(canvas.width / 2, canvas.height, 40, Math.PI, 0); ctx.fill(); ctx.strokeStyle = '#00ffcc'; ctx.lineWidth = 2; ctx.stroke();
 
     if (selectedRect) {
-        const x = gridStartX + selectedRect.c * cellSize;
-        const y = gridStartY + selectedRect.r * cellSize;
-        const w = selectedRect.w * cellSize;
-        const h = selectedRect.h * cellSize;
-
-        ctx.fillStyle = 'rgba(0, 255, 204, 0.2)';
-        ctx.fillRect(x, y, w, h);
+        const x = gridStartX + selectedRect.c * cellSize; const y = gridStartY + selectedRect.r * cellSize;
+        const w = selectedRect.w * cellSize; const h = selectedRect.h * cellSize;
+        ctx.fillStyle = 'rgba(0, 255, 204, 0.2)'; ctx.fillRect(x, y, w, h);
+        ctx.strokeStyle = '#00ffcc'; ctx.lineWidth = 2; ctx.strokeRect(x, y, w, h);
         
-        ctx.strokeStyle = '#00ffcc';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x, y, w, h);
-
-        // الرسم فوق الإصبع
-        let labelX = dragPosition.x;
-        let labelY = dragPosition.y - 80;
-
-        if (labelX < 50) labelX = 50;
-        if (labelX > canvas.width - 50) labelX = canvas.width - 50;
-        if (labelY < 50) labelY = 50;
-
-        // نص الأبعاد مع التحويل حسب الإعدادات
+        let labelX = dragPosition.x; let labelY = dragPosition.y - 80;
+        if (labelX < 50) labelX = 50; if (labelX > canvas.width - 50) labelX = canvas.width - 50; if (labelY < 50) labelY = 50;
         const text = `${formatNum(selectedRect.w)} × ${formatNum(selectedRect.h)}`;
-        
-        ctx.font = '900 30px "Cairo", sans-serif';
-        const textMetrics = ctx.measureText(text);
-        const textW = textMetrics.width;
-        
-        ctx.fillStyle = 'rgba(0,0,0,0.8)';
-        ctx.beginPath();
-        ctx.roundRect(labelX - textW/2 - 15, labelY - 25, textW + 30, 50, 10);
-        ctx.fill();
-        ctx.strokeStyle = '#00ffcc';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        ctx.fillStyle = '#fff';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(text, labelX, labelY + 4);
+        ctx.font = '900 30px "Cairo", sans-serif'; const textMetrics = ctx.measureText(text); const textW = textMetrics.width;
+        ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.beginPath(); ctx.roundRect(labelX - textW/2 - 15, labelY - 25, textW + 30, 50, 10); ctx.fill(); ctx.strokeStyle = '#00ffcc'; ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, labelX, labelY + 4);
     }
 }
 
 function update() {
     if (gameState !== 'PLAYING') return;
+    ctx.fillStyle = '#0a0a12'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = 'rgba(0, 255, 204, 0.03)'; if (frameCount % 10 === 0) ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 2, 20);
 
-    ctx.fillStyle = '#0a0a12';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.fillStyle = 'rgba(0, 255, 204, 0.03)';
-    if (frameCount % 10 === 0) {
-        ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 2, 20);
-    }
-
-    if (frameCount % 280 === 0) spawnEnemy(); 
+    const currentSpawnRate = difficultySettings[currentDifficulty].spawnRate;
+    if (frameCount % currentSpawnRate === 0) spawnEnemy(); 
     frameCount++;
 
-    ctx.font = 'bold 26px "Cairo", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     for (let i = enemies.length - 1; i >= 0; i--) {
-        let e = enemies[i];
-        e.y += e.speed;
-
+        let e = enemies[i]; e.y += e.speed;
         const gradient = ctx.createRadialGradient(e.x, e.y, 5, e.x, e.y, e.radius + 5);
-        gradient.addColorStop(0, e.color);
-        gradient.addColorStop(1, 'transparent');
-        ctx.fillStyle = gradient;
-        ctx.beginPath(); ctx.arc(e.x, e.y, e.radius + 10, 0, Math.PI * 2); ctx.fill();
-
-        ctx.beginPath();
-        ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
-        ctx.fillStyle = '#111';
-        ctx.fill();
-        ctx.strokeStyle = e.color;
-        ctx.lineWidth = 3;
-        ctx.stroke();
+        gradient.addColorStop(0, e.color); gradient.addColorStop(1, 'transparent');
+        ctx.fillStyle = gradient; ctx.beginPath(); ctx.arc(e.x, e.y, e.radius + 10, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2); ctx.fillStyle = '#111'; ctx.fill(); ctx.strokeStyle = e.color; ctx.lineWidth = 3; ctx.stroke();
+        ctx.font = 'bold 26px "Cairo", sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText(formatNum(e.value), e.x, e.y + 4);
         
-        ctx.fillStyle = '#fff';
-        // تطبيق تحويل الأرقام على الأعداء
-        ctx.fillText(formatNum(e.value), e.x, e.y + 4);
-
-        if (e.y > gridStartY - e.radius) {
-            enemies.splice(i, 1);
-            lives--;
-            playSound('error');
-            createExplosion(e.x, e.y, '#ff0055');
+        if (e.y > canvas.height - 250) {
+            const hintText = `${formatNum(e.factors.a)} × ${formatNum(e.factors.b)}`;
+            ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.beginPath(); ctx.roundRect(e.x - 35, e.y - 60, 70, 30, 5); ctx.fill();
+            ctx.font = 'bold 20px "Cairo", sans-serif'; ctx.fillStyle = '#ffcc00'; ctx.fillText(hintText, e.x, e.y - 42);
+        }
+        if (e.y > canvas.height - e.radius) {
+            killerEnemy = e; enemies.splice(i, 1); lives--; playSound('error'); createExplosion(e.x, e.y, '#ff0055');
             if (lives <= 0) endGame();
         }
     }
-
-    for (let i = particles.length - 1; i >= 0; i--) {
-        let p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.life--;
-        ctx.globalAlpha = p.life / 40;
-        ctx.fillStyle = p.color;
-        ctx.fillRect(p.x, p.y, 4, 4);
-        if (p.life <= 0) particles.splice(i, 1);
-    }
-    ctx.globalAlpha = 1;
-
-    for (let i = lasers.length - 1; i >= 0; i--) {
-        let l = lasers[i];
-        ctx.beginPath();
-        ctx.moveTo(l.x1, l.y1);
-        ctx.lineTo(l.x2, l.y2);
-        ctx.strokeStyle = l.color;
-        ctx.lineWidth = l.hit ? l.life / 2 : 1;
-        ctx.stroke();
-        l.life--;
-        if (l.life <= 0) lasers.splice(i, 1);
-    }
-
-    drawGrid();
-    updateUI();
-
-    requestAnimationFrame(update);
+    for (let i = particles.length - 1; i >= 0; i--) { let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life--; ctx.globalAlpha = p.life / 40; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 4, 4); if (p.life <= 0) particles.splice(i, 1); } ctx.globalAlpha = 1;
+    for (let i = lasers.length - 1; i >= 0; i--) { let l = lasers[i]; ctx.beginPath(); ctx.moveTo(l.x1, l.y1); ctx.lineTo(l.x2, l.y2); ctx.strokeStyle = l.color; ctx.lineWidth = l.hit ? l.life / 2 : 1; ctx.stroke(); l.life--; if (l.life <= 0) lasers.splice(i, 1); }
+    drawGrid(); updateUI(); requestAnimationFrame(update);
 }
 
-function updateUI() {
-    document.getElementById('score-display').innerText = `النقاط: ${formatNum(score)}`;
-    document.getElementById('lives-display').innerText = '❤️'.repeat(lives);
-}
+function updateUI() { document.getElementById('score-display').innerText = `النقاط: ${formatNum(score)}`; document.getElementById('lives-display').innerText = '❤️'.repeat(lives); }
+function endGame() { gameState = 'GAMEOVER'; document.getElementById('final-score').innerText = `النقاط النهائية: ${formatNum(score)}`; const reasonBox = document.getElementById('death-reason'); if (killerEnemy) { reasonBox.innerHTML = `قضي عليك بواسطة الرقم: <strong>${formatNum(killerEnemy.value)}</strong><br>الحل الصحيح كان: <strong>${formatNum(killerEnemy.factors.a)} × ${formatNum(killerEnemy.factors.b)}</strong>`; reasonBox.classList.remove('hidden'); } else { reasonBox.classList.add('hidden'); } document.getElementById('game-over-screen').classList.remove('hidden'); }
+function shareChallenge() { const text = `هل تعتقد أنك ذكي في الرياضيات؟ 🤔\nهل تستطيع هزيمة سرعة الأرقام؟ 🚀\nجرب لعبة *صياد الأرقام* الآن وأثبت مهارتك! 💪\n`; const url = window.location.href; if (navigator.share) { navigator.share({ title: 'صياد الأرقام', text: text, url: url }).catch(console.log); } else { const dummy = document.createElement("textarea"); document.body.appendChild(dummy); dummy.value = text + "\n" + url; dummy.select(); document.execCommand("copy"); document.body.removeChild(dummy); alert("تم نسخ رسالة التحدي!"); } }
+function shareGameGeneral() { const text = `لعبة صياد الأرقام.. أمتع طريقة لتعلم جدول الضرب! 🎮✨\nجربها الآن:`; const url = window.location.href; if (navigator.share) { navigator.share({ title: 'صياد الأرقام', text: text, url: url }).catch(console.log); } else { const dummy = document.createElement("textarea"); document.body.appendChild(dummy); dummy.value = text + "\n" + url; dummy.select(); document.execCommand("copy"); document.body.removeChild(dummy); alert("تم نسخ الرابط!"); } }
 
-function startGame() {
-    document.getElementById('start-screen').classList.add('hidden');
-    document.getElementById('game-over-screen').classList.add('hidden');
-    
-    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+canvas.addEventListener('mousedown', handleInputStart); window.addEventListener('mousemove', handleInputMove); window.addEventListener('mouseup', handleInputEnd);
+canvas.addEventListener('touchstart', handleInputStart, { passive: false }); canvas.addEventListener('touchmove', handleInputMove, { passive: false }); canvas.addEventListener('touchend', handleInputEnd, { passive: false });
 
-    gameState = 'PLAYING';
-    score = 0;
-    lives = 3;
-    enemies = [];
-    particles = [];
-    lasers = [];
-    difficultyLevel = 1;
-    frameCount = 0;
-    update();
-}
-
-function endGame() {
-    gameState = 'GAMEOVER';
-    document.getElementById('final-score').innerText = `النقاط النهائية: ${formatNum(score)}`;
-    document.getElementById('game-over-screen').classList.remove('hidden');
-}
-
-function resetGame() {
-    startGame();
-}
-
-canvas.addEventListener('mousedown', handleInputStart);
-window.addEventListener('mousemove', handleInputMove);
-window.addEventListener('mouseup', handleInputEnd);
-
-canvas.addEventListener('touchstart', handleInputStart, { passive: false });
-canvas.addEventListener('touchmove', handleInputMove, { passive: false });
-canvas.addEventListener('touchend', handleInputEnd, { passive: false });
-
-// تشغيل مرة واحدة لضبط التبديل في البداية
-toggleNumerals();
-
+initTableSelection(); toggleNumerals(); updateWhatsAppLink();
+// checkLaunchReadiness سيتم استدعاؤه تلقائياً بواسطة initTableSelection لأنه يستدعي toggleTable.. لا، initTableSelection لا يستدعي toggleTable بل يربطه
+// لذا نحتاج لاستدعاء checkLaunchReadiness مرة واحدة في البداية لتعطيل الزر
+checkLaunchReadiness();
 </script>
 </body>
 </html>
-
-
 
 
